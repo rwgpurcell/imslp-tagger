@@ -3,6 +3,11 @@ from requests.exceptions import RequestException
 import urllib.error
 from contextlib import closing
 from bs4 import BeautifulSoup
+import subprocess
+
+from pathlib import Path
+
+import re
 ### SCRAPING FUNCTIONS ####################################
 
 class NoResponseError(Exception):
@@ -85,7 +90,49 @@ class TagFetcher():
         tags = dict()
         my_text = my_html.find('h1',{'id':'firstHeading'}).text.strip().replace(')','').split('(')
         
-        tags['title'] = ' '.join(my_text[0:-1]).strip()
-        tags['composer'] = my_text[-1].strip()
+        tags['Title'] = ' '.join(my_text[0:-1]).strip()
+        tags['Author'] = my_text[-1].strip()
 
         return tags
+
+
+
+class ScoreTagger():
+
+    def __init__(self,folder):
+        self.folder = Path(folder)
+        # self.tag_subfolders = tag_subfolders
+        if not self.folder.exists():
+            raise FileNotFoundError()
+        
+    @staticmethod
+    def tag_score(path):
+        path = Path()/path
+        if path.suffix != '.pdf':
+            print("Non pdf path")
+            return
+        
+        name = path.name
+        pat = r"IMSLP[\d]+"
+
+        id = int(re.search(pat,name).group(0).replace('IMSLP',''))
+        tags = TagFetcher.get_tags(id)
+
+        my_args = ['exiftool']
+
+        for k,v in tags.items():
+            my_args.append("-"+k+"="+v)
+
+        my_args.append(str(path))
+        my_args.append('-overwrite_original')
+
+        print(tags)
+
+        subprocess.check_call(my_args)
+        
+        ###exiftool -Author="Grieg, Edvard" IMSLP36764-PMLP02533-Grieg_Peer_Gynt_Suite_I_Op.46_Peters_7190.pdf
+
+    def walk_folder(self):
+        file_paths = sorted(Path(self.folder).glob('**/*.pdf'))
+        for fp in file_paths:
+            ScoreTagger.tag_score(fp)
