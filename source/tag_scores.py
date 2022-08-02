@@ -4,7 +4,7 @@ import urllib.error
 from contextlib import closing
 from bs4 import BeautifulSoup
 import subprocess
-
+from time import sleep
 from pathlib import Path
 
 import re
@@ -134,5 +134,10 @@ class ScoreTagger():
 
     def walk_folder(self):
         file_paths = sorted(Path(self.folder).glob('**/*.pdf'))
+
+        first_file = True
         for fp in file_paths:
+            if not first_file:
+                sleep(3)
             ScoreTagger.tag_score(fp)
+            first_file = False
