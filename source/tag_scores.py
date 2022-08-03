@@ -99,10 +99,10 @@ class TagFetcher():
 
 class ScoreTagger():
 
-    def __init__(self,folder):
-        self.folder = Path(folder)
+    def __init__(self,path):
+        self.path = Path(path)
         # self.tag_subfolders = tag_subfolders
-        if not self.folder.exists():
+        if not self.path.exists():
             raise FileNotFoundError()
         
     @staticmethod
@@ -133,7 +133,7 @@ class ScoreTagger():
         ###exiftool -Author="Grieg, Edvard" IMSLP36764-PMLP02533-Grieg_Peer_Gynt_Suite_I_Op.46_Peters_7190.pdf
 
     def walk_folder(self):
-        file_paths = sorted(Path(self.folder).glob('**/*.pdf'))
+        file_paths = sorted(Path(self.path).glob('**/*.pdf'))
 
         first_file = True
         for fp in file_paths:
@@ -141,3 +141,9 @@ class ScoreTagger():
                 sleep(3)
             ScoreTagger.tag_score(fp)
             first_file = False
+
+    def run(self):
+        if self.path.is_dir():
+            self.walk_folder()
+        elif self.path.is_file():
+            ScoreTagger.tag_score(self.path)
