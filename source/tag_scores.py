@@ -91,7 +91,7 @@ class TagFetcher():
         my_text = my_html.find('h1',{'id':'firstHeading'}).text.strip().replace(')','').split('(')
         
         tags['Title'] = ' '.join(my_text[0:-1]).strip()
-        tags['Author'] = my_text[-1].strip()
+        tags['Author'] = my_text[-1].replace(',','.').strip()
 
         return tags
 
@@ -115,13 +115,24 @@ class ScoreTagger():
         name = path.name
         pat = r"IMSLP[\d]+"
 
-        id = int(re.search(pat,name).group(0).replace('IMSLP',''))
+        
+        res = re.search(pat,name)
+        if res:
+            id = res.group(0).replace('IMSLP','')
+        else:
+            print('IMSLP index not found in filename')
+            return
+
         tags = TagFetcher.get_tags(id)
 
         my_args = ['exiftool']
 
         for k,v in tags.items():
             my_args.append("-"+k+"="+v)
+
+        my_args.append('-Keywords-=IMSLPtag')
+        my_args.append('-Keywords+=IMSLPtag')
+
 
         my_args.append(str(path))
         my_args.append('-overwrite_original')
