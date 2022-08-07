@@ -84,8 +84,9 @@ class TagFetcher():
         return(html)
 
     @classmethod
-    def get_tags(cls,id):
+    def get_tags(cls,id,sleep_time = 3):
         my_html = cls._get_html(id)
+        sleep(sleep_time)
 
         tags = dict()
         my_text = my_html.find('h1',{'id':'firstHeading'}).text.strip().replace(')','').split('(')
@@ -99,11 +100,26 @@ class TagFetcher():
 
 class ScoreTagger():
 
-    def __init__(self,path):
+    def __init__(self,path,retag=False):
         self.path = Path(path)
+        self.retag = retag
         # self.tag_subfolders = tag_subfolders
         if not self.path.exists():
             raise FileNotFoundError()
+
+    @staticmethod
+    def get_keywords(path):
+        if not (Path()/path).is_file():
+            raise FileNotFoundError()
+
+        my_args = ['exiftool','-Keywords']
+
+        my_args.append(path)
+
+        res = subprocess.check_output(my_args)
+        res = res.decode("utf-8").split(':')[-1].split(',')
+        res = [s.strip() for s in res]
+        return(res)
         
     @staticmethod
     def tag_score(path):
@@ -146,12 +162,12 @@ class ScoreTagger():
     def walk_folder(self):
         file_paths = sorted(Path(self.path).glob('**/*.pdf'))
 
-        first_file = True
         for fp in file_paths:
-            if not first_file:
-                sleep(3)
-            ScoreTagger.tag_score(fp)
-            first_file = False
+            if 'IMSLPtag' not in ScoreTagger.get_keywords(fp) or self.retag:
+                ScoreTagger.tag_score(fp)
+            else:
+                print('Score already tagged. Pass retag = True to retag.')
+
 
     def run(self):
         if self.path.is_dir():
